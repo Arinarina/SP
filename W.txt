@@ -1,0 +1,68 @@
+#include <sys/types.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
+#include <time.h>
+#include <string.h>
+#define TIMEOUT 10
+int i=10;
+char message[1024]="";
+char alph[1024]="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+void handler_1(int sig){
+}
+void handler_2(int sig){
+}
+void makeMessage(){
+    for(int i=0;i<10;i++){
+        message[i]=alph[rand() % (strlen(alph) - 1)];}}
+int main (void){
+    srand(time(NULL));
+    FILE *f=fopen("w.txt","w");
+    fclose(f);
+    struct sigaction usr_action;
+    struct sigaction usr_action1;
+    sigset_t block_mask;
+    pid_t child_id;
+    char buffer[1024];
+    int fd[2];
+    printf("Enter N\n");
+    scanf("%d",&i);
+    pipe(fd);
+    child_id = fork ();
+    if (child_id == 0){
+        usr_action1.sa_handler = handler_2;
+        sigaction (SIGUSR2, &usr_action1, NULL);
+        child_id=getpid();
+        for(int j=0;j<i;j++){
+            makeMessage();
+            close(fd[0]);
+            write(fd[1],message, strlen(message)+1);
+            f=fopen("w.txt","a+");
+            fputc(alph[rand() % (strlen(alph) - 1)],f);
+            fclose(f);
+            kill (getppid (), SIGUSR1);
+            pause();}
+        puts ("Bye, now....");
+        kill (getppid (), SIGUSR1);
+        exit(0);}
+    else{
+        usr_action.sa_handler = handler_1;
+        sigaction (SIGUSR1, &usr_action, NULL);
+        pause();
+        printf("Hello\n");
+        for(int j=0;j<i;j++){
+            close(fd[1]);
+            read(fd[0],buffer,sizeof(buffer));
+            printf("Переданное сообщение:%s\n",buffer);
+            f=fopen("w.txt","r+");
+            for(int k=0;k<=j;k++){
+                if(k==j){
+                    printf("Записанный и считанный символ: %c \n\n",fgetc(f));
+                }else{
+                    fgetc(f);}}
+            fclose(f);
+            kill(child_id,SIGUSR2);
+            pause();}}
+return 0;}
